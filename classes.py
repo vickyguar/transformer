@@ -6,6 +6,7 @@ from constants import MAX_SEQ_LEN
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+#region POSICIONAL EMBEDDING
 class PositionalEmbedding(nn.Module):
     def __init__(self, d_model, max_len=MAX_SEQ_LEN):
         super().__init__()
@@ -17,16 +18,9 @@ class PositionalEmbedding(nn.Module):
         
     def forward(self, x):
         return x + self.pos_ebed_matrix[:x.size(0), :] 
+#endregion
 
-class PositionFeedForward(nn.Module):
-    def __init__(self, d_model, d_ff):
-        super().__init__()
-        self.linear1 = nn.Linear(d_model, d_ff)
-        self.linear2 = nn.Linear(d_ff, d_model)
-        
-    def forward(self, x):
-        return self.linear2(F.relu(self.linear1(x)))
-
+#region MULTIHEAD ATTENTION
 class MultiheadAttention(nn.Module):
     def __init__(self, d_model=512, num_heads=8):
         super().__init__()
@@ -69,7 +63,9 @@ class MultiheadAttention(nn.Module):
         weighted_values = torch.matmul(attention, V) # Con la V de values
         
         return weighted_values, attention
+#endregion
 
+#region ENCODER
 class EncoderLayer(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
         super().__init__()
@@ -98,6 +94,7 @@ class EncoderLayer(nn.Module):
 
         return x
 
+
 class Encoder(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, num_layers, dropout=0.1): # el encoder se repite N veces, en el paper 6 veces
         super().__init__()
@@ -109,8 +106,19 @@ class Encoder(nn.Module):
         for layer in self.layers:
             x = layer(x, mask)
         return self.norm(x)
+#endregion
 
 #region DECODER
+class PositionFeedForward(nn.Module):
+    def __init__(self, d_model, d_ff):
+        super().__init__()
+        self.linear1 = nn.Linear(d_model, d_ff)
+        self.linear2 = nn.Linear(d_ff, d_model)
+        
+    def forward(self, x):
+        return self.linear2(F.relu(self.linear1(x)))
+
+
 class DecoderLayer(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
         super().__init__()
@@ -138,6 +146,7 @@ class DecoderLayer(nn.Module):
         x = self.norm3(x)
 
         return x
+
 
 class Decoder(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, num_layers, dropout=0.1):
