@@ -18,6 +18,14 @@ class PositionalEmbedding(nn.Module):
     def forward(self, x):
         return x + self.pos_ebed_matrix[:x.size(0), :] 
 
+class PositionFeedForward(nn.Module):
+    def __init__(self, d_model, d_ff):
+        super().__init__()
+        self.linear1 = nn.Linear(d_model, d_ff)
+        self.linear2 = nn.Linear(d_ff, d_model)
+        
+    def forward(self, x):
+        return self.linear2(F.relu(self.linear1(x)))
 
 class MultiheadAttention(nn.Module):
     def __init__(self, d_model=512, num_heads=8):
@@ -102,15 +110,46 @@ class Encoder(nn.Module):
             x = layer(x, mask)
         return self.norm(x)
 
+#region DECODER
+class DecoderLayer(nn.Module):
+    def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
+        super().__init__()
+        self.self_attn = MultiheadAttention(d_model, num_heads)
+        self.cross_attn = MultiheadAttention(d_model, num_heads) # atención cruzada pq mira también al encoder
+        self.feed_foward = PositionFeedForward(d_model, d_ff, dropout)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.norm3 = nn.LayerNorm(d_model)
+        self.dropout1 = nn.Dropout(dropout)
+        self.dropout2 = nn.Dropout(dropout)
+        self.dropout3 = nn.Dropout(dropout)
+
+    def forward(self, x, encoder_output, target_mask, encoder_mask=None):
+        attention_score, _ = self.self_attn(x, x, x, target_mask)
+        x = x + self.dropout1(attention_score)
+        x = self.norm1(x)
+
+        encoder_attn, _ = self.cross_attn(x, encoder_output, encoder_output, encoder_mask)
+        x = x + self.dropout2(encoder_attn)
+        x = self.norm2(x)
+
+        output = self.feed_foward(x)
+        x = x + self.dropout3(output)
+        x = self.norm3(x)
+
+        return x
 
 class Decoder(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, num_layers, dropout=0.1):
         super().__init__()
-        
+        self.layers = nn.ModuleList([DecoderLayer(d_model, num_heads, d_ff, dropout) for _ in range(num_layers)])
+        self.norm = nn.LayerNorm(d_model)
 
     def forward(self, x, encoder_output, target_mask, encoder_mask=None):
-        pass
-
+        for layer in self.layers:
+            x = layer(x, encoder_output, target_mask, encoder_mask)
+        return self.norm(x)
+#endregion
 
 class Transformer(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, num_layers, input_vocab_size, target_vocab_size, max_len=MAX_SEQ_LEN, dropout=0.1):
