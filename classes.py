@@ -7,17 +7,29 @@ from constants import MAX_SEQ_LEN
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 #region POSICIONAL EMBEDDING
+# TODO REVISAR
+# ! REVISAR
 class PositionalEmbedding(nn.Module):
     def __init__(self, d_model, max_len=MAX_SEQ_LEN):
         super().__init__()
-        self.pos_ebed_matrix = torch.zeros(max_len, d_model, device=device) # secuencia máxima y d_model
+        self.d_model = d_model
+        self.max_len = max_len
+        self.register_buffer('pos_ebed_matrix', self._create_positional_matrix(d_model, max_len))
+        
+    def _create_positional_matrix(self, d_model, max_len):
+        pos_ebed_matrix = torch.zeros(max_len, d_model, device=device)
         token_pos = torch.arange(0, max_len, dtype=torch.float, device=device).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2, device=device).float() * (-math.log(10000.0) / d_model))
-        self.pos_ebed_matrix[:, 0::2] = torch.sin(token_pos * div_term) # elementos pares
-        self.pos_ebed_matrix[:, 1::2] = torch.cos(token_pos * div_term) # elementos impares
+        pos_ebed_matrix[:, 0::2] = torch.sin(token_pos * div_term) # elementos pares
+        if d_model % 2 == 1:  # si d_model es impar, handle the last dimension
+            pos_ebed_matrix[:, 1::2] = torch.cos(token_pos * div_term[:, :-1])
+        else:
+            pos_ebed_matrix[:, 1::2] = torch.cos(token_pos * div_term) # elementos impares
+        return pos_ebed_matrix
         
     def forward(self, x):
-        return x + self.pos_ebed_matrix[:x.size(0), :] 
+        seq_len = x.size(1)
+        return x + self.pos_ebed_matrix[:seq_len, :x.size(2)] 
 #endregion
 
 #region MULTIHEAD ATTENTION
@@ -124,7 +136,7 @@ class DecoderLayer(nn.Module):
         super().__init__()
         self.self_attn = MultiheadAttention(d_model, num_heads)
         self.cross_attn = MultiheadAttention(d_model, num_heads) # atención cruzada pq mira también al encoder
-        self.feed_foward = PositionFeedForward(d_model, d_ff, dropout)
+        self.feed_foward = PositionFeedForward(d_model, d_ff)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
