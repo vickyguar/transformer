@@ -1,13 +1,17 @@
+"""
+Docstring for classes
+"""
+
 import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from constants import MAX_SEQ_LEN
+from static.constants import MAX_SEQ_LEN
+from utils.utils import get_device
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = get_device()
 
 #region POSICIONAL EMBEDDING
-# TODO REVISAR
 # ! REVISAR
 class PositionalEmbedding(nn.Module):
     def __init__(self, d_model, max_len=MAX_SEQ_LEN):
@@ -17,9 +21,9 @@ class PositionalEmbedding(nn.Module):
         self.register_buffer('pos_ebed_matrix', self._create_positional_matrix(d_model, max_len))
         
     def _create_positional_matrix(self, d_model, max_len):
-        pos_ebed_matrix = torch.zeros(max_len, d_model, device=device)
-        token_pos = torch.arange(0, max_len, dtype=torch.float, device=device).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2, device=device).float() * (-math.log(10000.0) / d_model))
+        pos_ebed_matrix = torch.zeros(max_len, d_model, device=DEVICE)
+        token_pos = torch.arange(0, max_len, dtype=torch.float, device=DEVICE).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2, device=DEVICE).float() * (-math.log(10000.0) / d_model))
         pos_ebed_matrix[:, 0::2] = torch.sin(token_pos * div_term) # elementos pares
         if d_model % 2 == 1:  # si d_model es impar, handle the last dimension
             pos_ebed_matrix[:, 1::2] = torch.cos(token_pos * div_term[:, :-1])
@@ -49,11 +53,11 @@ class MultiheadAttention(nn.Module):
         self.linear_out = nn.Linear(d_model, d_model)
     
     def forward(self, Q, K, V, mask=None):
-        batch_size = Q.size(0)
         """
         Q,K,V tienen dimensiones (batch_size, seq_len, d_model), o (batch_size, seq_len, num_heads*d_k)
         Después del transpose, Q,K,V tienen dimensiones (batch_size, num_heads, seq_len, d_k)
         """
+        batch_size = Q.size(0)
         Q=self.w_q(Q).view(batch_size, -1, self.num_heads, self.d_k).transpose(1,2) # (batch_size, num_heads, seq_len, d_k)
         K=self.w_k(K).view(batch_size, -1, self.num_heads, self.d_k).transpose(1,2) # (batch_size, num_heads, seq_len, d_k)
         V=self.w_v(V).view(batch_size, -1, self.num_heads, self.d_v).transpose(1,2) # (batch_size, num_heads, seq_len, d_v)
@@ -81,7 +85,9 @@ class MultiheadAttention(nn.Module):
 class EncoderLayer(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
         super().__init__()
-        self.self_attn = MultiheadAttention(d_model, num_heads) # parte medular del transformer # TODO probar con nn.MultiheadAttention
+        # parte medular del transformer 
+        # TODO probar con nn.MultiheadAttention
+        self.self_attn = MultiheadAttention(d_model, num_heads)
         self.ffn = nn.Sequential(
             nn.Linear(d_model, d_ff),
             nn.ReLU(),
@@ -110,7 +116,8 @@ class EncoderLayer(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, num_layers, dropout=0.1): # el encoder se repite N veces, en el paper 6 veces
         super().__init__()
-        # self.layers = nn.ModuleList([nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, dim_feedforward=d_ff, dropout=dropout) for _ in range(num_layers)]) #TODO Probar con eso
+        # self.layers = nn.ModuleList([nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, dim_feedforward=d_ff, dropout=dropout) for _ in range(num_layers)])
+        # TODO Probar con eso
         self.layers = nn.ModuleList([EncoderLayer(d_model, num_heads, d_ff, dropout) for _ in range(num_layers)])
         self.norm = nn.LayerNorm(d_model)
         
@@ -201,6 +208,6 @@ class Transformer(nn.Module):
         source_mask = (source != 0).unsqueeze(1).unsqueeze(2) # agrego dimensionalidad
         target_mask = (target != 0).unsqueeze(1).unsqueeze(2)
         size = target.size(1)
-        no_mask = torch.tril(torch.ones((1, size, size), device=device)).bool()
+        no_mask = torch.tril(torch.ones((1, size, size), device=DEVICE)).bool()
         target_mask = target_mask & no_mask
         return source_mask, target_mask 

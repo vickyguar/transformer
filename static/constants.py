@@ -1,4 +1,7 @@
-import torch
+"""
+Docstring for constants
+"""
+
 import os
 
 MAX_SEQ_LEN = 128
@@ -9,5 +12,3 @@ elif os.path.exists("/content/transformer/datos.tsv"):
     DATOS_PATH = "/content/transformer/datos.tsv"
 else:
     DATOS_PATH = "datos.tsv"
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
