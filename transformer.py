@@ -13,12 +13,12 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
+from data.dataset import Traductor, collate_fn
 from static.classes import Transformer
 from static.constants import DATOS_PATH, MAX_SEQ_LEN
-from utils.utils import get_device
-from data.dataset import Traductor, collate_fn
 from utils.preprocess import construir_palabras, open_df, preprocesar_enunciado
 from utils.train import train
+from utils.utils import get_device
 
 DEVICE = get_device()
 
@@ -150,6 +150,7 @@ def main(args, config: TrainingConfig = None) -> None:
     # Guardar modelo
     save_model(model, config)
     logger.info("Pipeline de entrenamiento completado")
+    return model
 
 
 def parse_args():
