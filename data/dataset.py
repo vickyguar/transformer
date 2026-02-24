@@ -1,26 +1,30 @@
-"""
-Docstring for dataset
-"""
-
 import torch
 from torch.utils.data import Dataset
+from typing import Dict, List, Tuple
 from static.constants import MAX_SEQ_LEN
 
 
 class Traductor(Dataset):
     """
-    Docstring
+    Dataset para traducción español-inglés.
+    
+    Args:
+        spanish (List[str]): lista de oraciones en español.
+        english (List[str]): lista de oraciones en inglés.
+        spanish_palabra_idx (Dict[str, int]): vocabulario español.
+        english_palabra_idx (Dict[str, int]): vocabulario inglés.
+        transform: transformación opcional.
     """
-    def __init__(self, spanish, english, spanish_palabra_idx, english_palabra_idx, transform=None):
+    def __init__(self, spanish: List[str], english: List[str], spanish_palabra_idx: Dict[str, int], english_palabra_idx: Dict[str, int], transform=None):
         self.spanish = spanish
         self.english = english
         self.spanish_palabra_idx = spanish_palabra_idx
         self.english_palabra_idx = english_palabra_idx
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.spanish) # o english
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         english_sentence = self.english[idx]
         spanish_sentence = self.spanish[idx]
         
@@ -32,11 +36,15 @@ class Traductor(Dataset):
 
 
 # TODO: estudiar qué es una collate_fn (definición y usos)
-def collate_fn(batch):
+def collate_fn(batch: List[Tuple[torch.Tensor, torch.Tensor]]) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    Docstring for collate_fn
+    Función collate para el DataLoader.
     
-    :param batch: Description
+    Args:
+        batch (List[Tuple[torch.Tensor, torch.Tensor]]): Batch de datos.
+    
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Batch padded.
     """
     english_batch, spanish_batch = zip(*batch) # descomprime la lista de tuplas
     

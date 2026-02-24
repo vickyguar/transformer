@@ -1,7 +1,3 @@
-"""
-Docstring 
-"""
-
 import argparse
 import logging
 from dataclasses import dataclass
@@ -32,6 +28,21 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TrainingConfig:
+    """
+    Configuración para el entrenamiento del modelo.
+    
+    Atributos:
+        batch_size (int): tamaño del batch para entrenamiento.
+        d_model (int): dimensión del modelo (embedding).
+        num_heads (int): número de heads en multihead attention.
+        d_ff (int): dimensión de la capa feed-forward.
+        num_layers (int): número de capas en el encoder y decoder.
+        dropout (float): probabilidad de dropout.
+        learning_rate (float): tasa de aprendizaje para el optimizador.
+        max_len (int): longitud máxima de secuencia.
+        epochs (int): número de épocas de entrenamiento.
+        model_save_path (str): ruta para guardar el modelo entrenado.
+    """
     batch_size: int = 32
     d_model: int = 512
     num_heads: int = 8
@@ -105,18 +116,44 @@ def initialize_optimizer_and_loss(model: Transformer, config: TrainingConfig) ->
     return optimizer, criterion
 
 
-def save_model(model: Transformer, config: TrainingConfig) -> None:
-    """Guardar checkpoint del modelo en disco."""
-    model_path = Path(config.model_save_path)
-    model_path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'config': config,
-    }, model_path)
-    logger.info(f"Modelo guardado en {model_path}")
+def load_model_and_vocab(model_path: str, device: torch.device) -> Tuple[Transformer, Dict[str, int], Dict[int, str], Dict[str, int], Dict[int, str]]:
+    """Cargar modelo y vocabularios desde checkpoint."""
+    checkpoint = torch.load(model_path, map_location=device)
+    config = checkpoint['config']
+    spanish_vocab_size = len(checkpoint['spanish_palabra_idx'])
+    english_vocab_size = len(checkpoint['english_palabra_idx'])
+    model = Transformer(
+        d_model=config.d_model,
+        num_heads=config.num_heads,
+        d_ff=config.d_ff,
+        num_layers=config.num_layers,
+        input_vocab_size=spanish_vocab_size,
+        target_vocab_size=english_vocab_size,
+        max_len=config.max_len,
+        dropout=config.dropout
+    )
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.to(device)
+    model.eval()
+    spanish_palabra_idx = checkpoint['spanish_palabra_idx']
+    english_palabra_idx = checkpoint['english_palabra_idx']
+    english_idx_palabra = checkpoint['english_idx_palabra']
+    spanish_idx_palabra = checkpoint['spanish_idx_palabra']
+    logger.info(f"Modelo y vocabularios cargados desde {model_path}")
+    return model, spanish_palabra_idx, spanish_idx_palabra, english_palabra_idx, english_idx_palabra
 
 
 def main(args, config: TrainingConfig = None) -> None:
+    """
+    Función principal para ejecutar el pipeline de entrenamiento del modelo.
+    
+    Args:
+        args: argumentos de línea de comandos (opcional si se pasa config).
+        config: configuración de entrenamiento (opcional, se crea desde args si no se proporciona).
+    
+    Returns:
+        None
+    """
     if config is None:
         config = TrainingConfig(
             batch_size=args.batch_size,
@@ -148,7 +185,7 @@ def main(args, config: TrainingConfig = None) -> None:
     train(model, dataloader, criterion, optimizer, epochs=config.epochs)
     
     # Guardar modelo
-    save_model(model, config)
+    save_model(model, config, spanish_palabra_idx, english_palabra_idx, {v: k for k, v in english_palabra_idx.items()}, {v: k for k, v in spanish_palabra_idx.items()})
     logger.info("Pipeline de entrenamiento completado")
     return model
 

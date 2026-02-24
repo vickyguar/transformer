@@ -1,21 +1,18 @@
-"""
-# ! Docstring 
-"""
-
 from collections import Counter
+from typing import Dict, List, Tuple
 
 import pandas as pd
 
 
-# TODO: add descriptions to docstrings
 def open_df(csv_path: str) -> pd.DataFrame:
     """
-    Docstring for open_df
+    Carga un DataFrame desde un archivo TSV.
     
-    :param csv_path: Description
-    :type csv_path: str
-    :return: Description
-    :rtype: DataFrame
+    Args:
+        csv_path (str): Ruta al archivo.
+    
+    Returns:
+        pd.DataFrame: DataFrame cargado.
     """
     
     df = pd.read_csv(csv_path, sep="\t", header=None, encoding="utf-8")
@@ -24,16 +21,16 @@ def open_df(csv_path: str) -> pd.DataFrame:
     return df
 
 
-# TODO: add descriptions to docstrings
 # ! probar quitando todos los simbolos, tal vez un regex? az a AZ?
 def preprocesar_enunciado(enunciado: str) -> str:
     """
-    Docstring for preprocesar_enunciado
+    Preprocesa una oración agregando tokens especiales.
     
-    :param enunciado: Description
-    :type enunciado: str
-    :return: Description
-    :rtype: str
+    Args:
+        enunciado (str): Oración de entrada.
+    
+    Returns:
+        str: Oración preprocesada.
     """
     enunciado = str(enunciado)
     enunciado = enunciado.lower().strip()
@@ -46,15 +43,16 @@ def preprocesar_enunciado(enunciado: str) -> str:
     enunciado = '<sos> ' + enunciado + ' <eos>'
     return enunciado
 
-# TODO: add descriptions to docstrings
-def construir_palabras(enunciados:list[str]) -> tuple[dict[str, int], dict[int, str]]:
+
+def construir_palabras(enunciados: List[str]) -> Tuple[Dict[str, int], Dict[int, str]]:
     """
-    Docstring for construir_palabras
+    Construye vocabularios de palabras a índices y viceversa.
     
-    :param enunciados: Description
-    :type enunciados: list[str]
-    :return: Description
-    :rtype: tuple[dict[str, int], dict[int, str]]
+    Args:
+        enunciados (List[str]): Lista de oraciones.
+    
+    Returns:
+        Tuple[Dict[str, int], Dict[int, str]]: Vocabularios.
     """
     palabras = [palabra for enunciado in enunciados for palabra in enunciado.split(" ")]
     palabras_count = Counter(palabras)

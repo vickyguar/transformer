@@ -3,15 +3,29 @@ Docstring for train
 """
 
 from tqdm import tqdm
+from typing import TYPE_CHECKING
 from .utils import get_device
+
+if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
+    import torch
 
 DEVICE = get_device()
 
 
-def train(model, dataloader, criterion, optimizer, epochs:int):
+def train(model: torch.nn.Module, dataloader: 'DataLoader', criterion: torch.nn.Module, optimizer: torch.optim.Optimizer, epochs: int) -> None:
     """
-    Recordar que recibe un enunciado input (español) y un target (en inglés).
-    El decoder recibe la traducción, el resultado en inglés.
+    Entrena el modelo Transformer.
+    
+    Args:
+        model (torch.nn.Module): Modelo a entrenar.
+        dataloader (DataLoader): DataLoader con datos.
+        criterion: Función de pérdida.
+        optimizer: Optimizador.
+        epochs (int): Número de épocas.
+    
+    Returns:
+        None
     """
     model.train()
     
