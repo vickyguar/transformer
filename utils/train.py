@@ -5,10 +5,8 @@ Docstring for train
 from tqdm import tqdm
 from typing import TYPE_CHECKING
 from .utils import get_device
-
-if TYPE_CHECKING:
-    from torch.utils.data import DataLoader
-    import torch
+from torch.utils.data import DataLoader
+import torch
 
 DEVICE = get_device()
 
