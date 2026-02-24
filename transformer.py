@@ -118,7 +118,7 @@ def initialize_optimizer_and_loss(model: Transformer, config: TrainingConfig) ->
 
 def load_model_and_vocab(model_path: str, device: torch.device) -> Tuple[Transformer, Dict[str, int], Dict[int, str], Dict[str, int], Dict[int, str]]:
     """Cargar modelo y vocabularios desde checkpoint."""
-    checkpoint = torch.load(model_path, map_location=device)
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
     config = checkpoint['config']
     spanish_vocab_size = len(checkpoint['spanish_palabra_idx'])
     english_vocab_size = len(checkpoint['english_palabra_idx'])
