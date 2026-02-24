@@ -185,7 +185,7 @@ def main(args, config: TrainingConfig = None) -> None:
     train(model, dataloader, criterion, optimizer, epochs=config.epochs)
     
     # Guardar modelo
-    save_model(model, config, spanish_palabra_idx, english_palabra_idx, {v: k for k, v in english_palabra_idx.items()}, {v: k for k, v in spanish_palabra_idx.items()})
+    # save_model(model, config, spanish_palabra_idx, english_palabra_idx, {v: k for k, v in english_palabra_idx.items()}, {v: k for k, v in spanish_palabra_idx.items()})
     logger.info("Pipeline de entrenamiento completado")
     return model
 

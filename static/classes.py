@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from static.constants import MAX_SEQ_LEN
 from utils.utils import get_device
+from typing import Tuple
 
 DEVICE = get_device()
 
