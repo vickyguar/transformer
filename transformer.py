@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple
@@ -116,6 +117,28 @@ def initialize_optimizer_and_loss(model: Transformer, config: TrainingConfig) ->
     return optimizer, criterion
 
 
+# TODO agregar type hints y docstring
+def save_model(model, config, spanish_palabra_idx, english_palabra_idx, english_idx_palabra, spanish_idx_palabra):
+    """
+    Guarda el modelo y vocabularios en el formato esperado por load_model_and_vocab.
+    """
+
+    save_path = Path(config.model_save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    checkpoint = {
+        "model_state_dict": model.state_dict(),
+        "config": config,
+        "spanish_palabra_idx": spanish_palabra_idx,
+        "english_palabra_idx": english_palabra_idx,
+        "english_idx_palabra": english_idx_palabra,
+        "spanish_idx_palabra": spanish_idx_palabra,
+    }
+
+    torch.save(checkpoint, save_path)
+
+    logger.info(f"Modelo guardado en {save_path}")
+
 def load_model_and_vocab(model_path: str, device: torch.device) -> Tuple[Transformer, Dict[str, int], Dict[int, str], Dict[str, int], Dict[int, str]]:
     """Cargar modelo y vocabularios desde checkpoint."""
     checkpoint = torch.load(model_path, map_location=device, weights_only=False)
@@ -185,7 +208,7 @@ def main(args, config: TrainingConfig = None) -> None:
     train(model, dataloader, criterion, optimizer, epochs=config.epochs)
     
     # Guardar modelo
-    # save_model(model, config, spanish_palabra_idx, english_palabra_idx, {v: k for k, v in english_palabra_idx.items()}, {v: k for k, v in spanish_palabra_idx.items()})
+    save_model(model, config, spanish_palabra_idx, english_palabra_idx, {v: k for k, v in english_palabra_idx.items()}, {v: k for k, v in spanish_palabra_idx.items()})
     logger.info("Pipeline de entrenamiento completado")
     return model
 
